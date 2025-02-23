@@ -39,7 +39,34 @@ public class OrderService {
      */
     public List<Order> getOrdersByDate(LocalDate date) throws ExecutionException, InterruptedException {
         String dateStr = DateUtil.formatDate(date);
-        return getOrdersByDateString(dateStr);
+        List<Order> orders = getOrdersByDateString(dateStr);
+        
+        // Calculate totals across all branches
+        Map<String, Double> totalProducts = new HashMap<>();
+        for (Order order : orders) {
+            Map<String, String> products = order.getProducts();
+            for (Map.Entry<String, String> entry : products.entrySet()) {
+                String product = entry.getKey();
+                double quantity = parseQuantity(entry.getValue());
+                totalProducts.merge(product, quantity, Double::sum);
+            }
+        }
+        
+        // Add total products as a special "branch"
+        Map<String, String> totalProductsStr = new HashMap<>();
+        for (Map.Entry<String, Double> entry : totalProducts.entrySet()) {
+            totalProductsStr.put(entry.getKey(), String.valueOf(entry.getValue()));
+        }
+        
+        Order totalOrder = new Order(
+            "total",
+            "Total Across All Branches",
+            dateStr,
+            totalProductsStr
+        );
+        orders.add(totalOrder);
+        
+        return orders;
     }
 
     private List<Order> getOrdersByDateString(String dateStr) throws ExecutionException, InterruptedException {
