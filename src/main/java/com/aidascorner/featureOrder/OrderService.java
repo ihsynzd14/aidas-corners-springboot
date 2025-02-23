@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.aidascorner.featureBranch.service.BranchService;
@@ -25,6 +27,7 @@ public class OrderService {
 
     private final Firestore firestore;
     private final BranchService branchService;
+    private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 
     public OrderService(Firestore firestore, BranchService branchService) {
         this.firestore = firestore;
@@ -67,6 +70,20 @@ public class OrderService {
     }
 
     /**
+     * Helper method to parse quantity string and extract numeric value
+     */
+    private double parseQuantity(String quantityStr) {
+        try {
+            // Remove any non-numeric characters except decimal point and negative sign
+            String numericStr = quantityStr.replaceAll("[^0-9.-]", "").trim();
+            return Double.parseDouble(numericStr);
+        } catch (Exception e) {
+            logger.warn("Failed to parse quantity: {}", quantityStr);
+            return 0.0;
+        }
+    }
+
+    /**
      * Get orders for a date range and merge by branch
      */
     public Map<String, List<Order>> getOrdersForDateRange(LocalDate startDate, LocalDate endDate) throws ExecutionException, InterruptedException {
@@ -86,7 +103,7 @@ public class OrderService {
                 Map<String, String> products = order.getProducts();
                 for(Map.Entry<String, String> entry : products.entrySet()) {
                     String product = entry.getKey();
-                    double quantity = Double.parseDouble(entry.getValue());
+                    double quantity = parseQuantity(entry.getValue());
                     totalProducts.merge(product, quantity, Double::sum);
                 }
                 
@@ -98,10 +115,10 @@ public class OrderService {
                     
                     for(Map.Entry<String, String> entry : newProducts.entrySet()) {
                         String product = entry.getKey();
-                        double newQuantity = Double.parseDouble(entry.getValue());
+                        double newQuantity = parseQuantity(entry.getValue());
                         
                         if(existingProducts.containsKey(product)) {
-                            double existingQuantity = Double.parseDouble(existingProducts.get(product));
+                            double existingQuantity = parseQuantity(existingProducts.get(product));
                             existingProducts.put(product, String.valueOf(existingQuantity + newQuantity));
                         } else {
                             existingProducts.put(product, entry.getValue());
