@@ -34,4 +34,4 @@ build/
 .windsurfrules
 
 ### Firebase ###
-resources/firebase_key.json
+src/main/resources/firebase_key.json
