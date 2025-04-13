@@ -12,6 +12,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addMapping("/**")
                 .allowedOrigins("*") // Tüm originlere izin ver - production'da spesifik domain'leri belirtmelisiniz
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowCredentials(true)
                 .allowedHeaders("*")
                 .maxAge(3600); // 1 saat ön belleğe alma
     }
